@@ -15,24 +15,22 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.x'  # Use .NET 8 instead of 9/10
     
     - name: Install Android Workload
       run: dotnet workload install android
     
-    - name: Create Project
-      run: dotnet new android -n MathematicaConsole
-    
-    - name: Replace Program.cs
-      run: cp Program.cs MathematicaConsole/Program.cs
-    
     - name: Build APK
       run: |
+        dotnet new android -n MathematicaConsole
         cd MathematicaConsole
-        dotnet build -c Release -f net8.0-android
-    
+        # Fix the Android version mismatch
+        sed -i 's/<TargetFramework>net[0-9.]*-android/<TargetFramework>net8.0-android33.0/' MathematicaConsole.csproj
+        sed -i 's/<SupportedOSPlatformVersion>[0-9]*/<SupportedOSPlatformVersion>21/' MathematicaConsole.csproj
+        dotnet build -c Release
+      
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug.apk
+        name: MathematicaConsole.apk
         path: MathematicaConsole/bin/Release/net8.0-android/*.apk
