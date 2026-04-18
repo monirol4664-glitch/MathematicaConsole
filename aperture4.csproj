@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <TargetFrameworks>net7.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <ApplicationId>org.aperture4.math</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
@@ -9,14 +9,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <!-- Add this line to suppress the NETSDK1202 warning -->
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Keep the exact versions that resolved successfully -->
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="MathNet.Symbolics" Version="0.24.0" />
-    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="7.0.101" />
   </ItemGroup>
 </Project>
