@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mathematica-console"
+version = "1.0.0"
+description = "Offline Mathematica-style symbolic math console for Android"
+authors = [{name = "Your Name", email = "your@email.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "kivy==2.2.1",
+    "kivymd==1.1.1",
+    "sympy==1.12",
+    "mpmath==1.3.0",
+    "matplotlib==3.7.2",
+    "numpy==1.24.3",
+    "Pillow==10.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/mathematica-console"
+Issues = "https://github.com/yourusername/mathematica-console/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["mathematica_console"]
+
+[tool.setuptools.package-data]
+mathematica_console = ["resources/*.txt", "*.kv"]
+
+[tool.kivy]
+version = "2.2.1"

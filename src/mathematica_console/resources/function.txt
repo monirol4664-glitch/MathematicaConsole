@@ -1,0 +1,60 @@
+# Mathematica-style functions reference
+
+## Calculus
+Integrate[f, x] - Indefinite integral
+Integrate[f, {x, a, b}] - Definite integral
+D[f, x] - Partial derivative
+D[f, {x, n}] - nth derivative
+Limit[f, x->a] - Limit
+Series[f, {x, a, n}] - Taylor series
+Sum[f, {i, min, max}] - Summation
+Product[f, {i, min, max}] - Product
+
+## Algebra
+Solve[eq, x] - Solve equation
+Solve[{eq1, eq2}, {x, y}] - Solve system
+Simplify[expr] - Simplify expression
+Expand[expr] - Expand expression
+Factor[expr] - Factor expression
+Apart[expr] - Partial fractions
+Together[expr] - Common denominator
+Cancel[expr] - Cancel common factors
+
+## Linear Algebra
+Matrix[list] - Create matrix
+MatrixForm[matrix] - Display matrix
+det[matrix] - Determinant
+inv[matrix] - Inverse
+transpose[matrix] - Transpose
+eigenvals[matrix] - Eigenvalues
+eigenvects[matrix] - Eigenvectors
+
+## Trigonometry
+Sin[x], Cos[x], Tan[x]
+ArcSin[x], ArcCos[x], ArcTan[x]
+Sinh[x], Cosh[x], Tanh[x]
+
+## Special Functions
+Gamma[z] - Gamma function
+factorial[n] - Factorial
+binomial[n, k] - Binomial coefficient
+polylog[s, z] - Polylogarithm
+zeta[s] - Riemann zeta
+
+## Plotting
+Plot[f, {x, a, b}] - 2D plot
+Plot3D[f, {x, a, b}, {y, c, d}] - 3D plot
+ParametricPlot[{fx, fy}, {t, a, b}] - Parametric plot
+ContourPlot[f, {x, a, b}, {y, c, d}] - Contour plot
+
+## Constants
+pi - π (3.14159...)
+E - e (2.71828...)
+I - Imaginary unit
+oo - Infinity
+GoldenRatio - φ (1.61803...)
+
+## Variables
+Clear[x] - Clear variable
+vars - Show all variables
+history - Show command history

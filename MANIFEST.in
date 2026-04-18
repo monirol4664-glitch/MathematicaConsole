@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include requirements.txt
+include buildozer.spec
+recursive-include src/mathematica_console/resources *.txt *.kv *.png *.jpg
+recursive-include src/mathematica_console *.py
