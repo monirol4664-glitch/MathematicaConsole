@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.9'
       
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev
@@ -30,28 +30,29 @@ jobs:
       
       - name: Create buildozer.spec
         run: |
-          cat > buildozer.spec << 'EOF'
-[app]
-title = Python Console
-package.name = pythonconsole
-package.domain = org.pythonapp
-source.dir = .
-version = 1.0.0
-version.code = 1
-requirements = python3,kivy
-orientation = portrait
-fullscreen = 0
-android.api = 30
-android.sdk = 30
-android.ndk = 23b
-android.allow_backup = True
-android.permissions = WRITE_EXTERNAL_STORAGE
-android.debug = True
-
-[buildozer]
-log_level = 2
-warn_on_root = 1
-EOF
+          echo '[app]' > buildozer.spec
+          echo 'title = Python Console' >> buildozer.spec
+          echo 'package.name = pythonconsole' >> buildozer.spec
+          echo 'package.domain = org.pythonapp' >> buildozer.spec
+          echo 'source.dir = .' >> buildozer.spec
+          echo 'version = 1.0.0' >> buildozer.spec
+          echo 'version.code = 1' >> buildozer.spec
+          echo 'requirements = python3,kivy' >> buildozer.spec
+          echo 'orientation = portrait' >> buildozer.spec
+          echo 'fullscreen = 0' >> buildozer.spec
+          echo 'android.api = 30' >> buildozer.spec
+          echo 'android.sdk = 30' >> buildozer.spec
+          echo 'android.ndk = 23b' >> buildozer.spec
+          echo 'android.allow_backup = True' >> buildozer.spec
+          echo 'android.permissions = WRITE_EXTERNAL_STORAGE' >> buildozer.spec
+          echo 'android.debug = True' >> buildozer.spec
+          echo '' >> buildozer.spec
+          echo '[buildozer]' >> buildozer.spec
+          echo 'log_level = 2' >> buildozer.spec
+          echo 'warn_on_root = 1' >> buildozer.spec
+      
+      - name: Show spec file
+        run: cat buildozer.spec
       
       - name: Build APK
         run: buildozer android debug
