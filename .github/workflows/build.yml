@@ -1,13 +1,17 @@
 name: Build Mathematica Console APK
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup .NET 9
       uses: actions/setup-dotnet@v4
@@ -17,25 +21,14 @@ jobs:
     - name: Install Android Workload
       run: dotnet workload install android
     
-    - name: Create and Build App
-      run: |
-        dotnet new android -n MathematicaConsole
-        cd MathematicaConsole
-        
-        # Replace with our MainActivity
-        cat > MainActivity.cs << 'EOF'
-        [Copy the ENTIRE MainActivity.cs code above here]
-        EOF
-        
-        # Update project file
-        sed -i 's/<TargetFramework>.*<\/TargetFramework>/<TargetFramework>net9.0-android35<\/TargetFramework>/' MathematicaConsole.csproj
-        sed -i 's/<\/PropertyGroup>/  <AndroidPackageFormat>apk<\/AndroidPackageFormat>\n<\/PropertyGroup>/' MathematicaConsole.csproj
-        
-        # Build
-        dotnet publish -c Release -f net9.0-android35
-        
+    - name: Restore dependencies
+      run: dotnet restore MathematicaConsole.csproj
+    
+    - name: Build Android APK
+      run: dotnet publish MathematicaConsole.csproj -c Release -f net9.0-android35 /p:AndroidPackageFormat=apk
+    
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: MathematicaConsole.apk
-        path: MathematicaConsole/bin/Release/net9.0-android35/*.apk
+        name: MathematicaConsole-APK
+        path: bin/Release/net9.0-android35/*.apk
