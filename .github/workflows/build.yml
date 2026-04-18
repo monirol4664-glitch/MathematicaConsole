@@ -15,32 +15,19 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 9.0.x  # Force .NET 9, not 10
     
     - name: Install MAUI workload
-      run: |
-        dotnet workload install maui-android
-        dotnet workload install android
-    
-    - name: Install Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: platform-tools platforms;android-33 build-tools;33.0.0
+      run: dotnet workload install maui-android
     
     - name: Restore dependencies
       run: dotnet restore
     
     - name: Build Android APK
-      run: dotnet build -c Release -f net9.0-android --no-restore
+      run: dotnet build -c Release
     
     - name: Publish APK
-      run: dotnet publish -f net9.0-android -c Release --no-build -o output
-    
-    - name: Find APK
-      run: |
-        find . -name "*.apk" -exec cp {} aperture4.apk \; 2>/dev/null || echo "Searching..."
-        ls -la output/ || echo "Checking output..."
-        ls -la **/*.apk || echo "No APK found"
+      run: dotnet publish -c Release -f net9.0-android
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -48,5 +35,4 @@ jobs:
         name: aperture4-apk
         path: |
           **/*.apk
-          output/*.apk
-          *.apk
+          bin/Release/**/*.apk
