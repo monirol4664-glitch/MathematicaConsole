@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="https://www.w3.org/ns/widgets" xmlns:gap="https://phonegap.com/ns/1.0" id="com.mathapp.pro" version="1.0.0">
+    <name>MathMaster Pro</name>
+    <description>Advanced Mathematics Toolkit</description>
+    <author email="support@mathmaster.com" href="https://mathmaster.com">MathMaster Team</author>
+    <content src="index.html" />
+    <access origin="*" />
+    <preference name="Orientation" value="portrait" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="StatusBarOverlaysWebView" value="false" />
+    <preference name="StatusBarBackgroundColor" value="#1a1a2e" />
+    <preference name="StatusBarStyle" value="lightcontent" />
+    <icon src="icon.png" />
+</widget>
