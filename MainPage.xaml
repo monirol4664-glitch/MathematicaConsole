@@ -4,50 +4,84 @@
              x:Class="MathToolsApp.MainPage"
              Title="Math Tools">
     
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        
-        <Label Grid.Row="0" 
-               Text="🧮 Math Tools Pro" 
-               FontSize="28" 
-               FontAttributes="Bold"
-               HorizontalOptions="Center"
-               Padding="20"/>
-        
-        <CollectionView Grid.Row="1" 
-                        x:Name="ToolsCollection"
-                        ItemsLayout="VerticalGrid"
-                        ItemSizingStrategy="MeasureFirstItem">
-            <CollectionView.ItemsLayout>
-                <GridItemsLayout Orientation="Vertical" Span="2"/>
-            </CollectionView.ItemsLayout>
+    <ScrollView>
+        <VerticalStackLayout Spacing="15" Padding="20">
             
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame CornerRadius="15" 
-                           Margin="10"
-                           Padding="15"
-                           BackgroundColor="White">
-                        <VerticalStackLayout>
-                            <Label Text="{Binding Icon}" 
-                                   FontSize="40"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding Name}" 
-                                   FontSize="16" 
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding Description}" 
-                                   FontSize="12" 
-                                   TextColor="Gray"
-                                   HorizontalOptions="Center"
-                                   LineBreakMode="WordWrap"/>
-                        </VerticalStackLayout>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-    </Grid>
+            <Label Text="🧮 Math Tools" 
+                   FontSize="32" 
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"/>
+            
+            <Label Text="Professional Math Toolkit" 
+                   FontSize="14" 
+                   TextColor="Gray"
+                   HorizontalOptions="Center"/>
+
+            <!-- Algebra Card -->
+            <Frame CornerRadius="15" BackgroundColor="#E3F2FD">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="📐" FontSize="40" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Algebra Solver" FontSize="18" FontAttributes="Bold"/>
+                        <Label Text="Quadratic, linear equations &amp; systems" FontSize="12" TextColor="Gray"/>
+                        <Button x:Name="AlgebraBtn" Text="Open →" BackgroundColor="#2196F3" 
+                                TextColor="White" CornerRadius="8" HeightRequest="35"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Calculus Card -->
+            <Frame CornerRadius="15" BackgroundColor="#E8F5E9">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="∫" FontSize="40" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Calculus" FontSize="18" FontAttributes="Bold"/>
+                        <Label Text="Derivatives, integrals &amp; limits" FontSize="12" TextColor="Gray"/>
+                        <Button x:Name="CalculusBtn" Text="Open →" BackgroundColor="#4CAF50" 
+                                TextColor="White" CornerRadius="8" HeightRequest="35"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Statistics Card -->
+            <Frame CornerRadius="15" BackgroundColor="#FFF3E0">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="📊" FontSize="40" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Statistics" FontSize="18" FontAttributes="Bold"/>
+                        <Label Text="Mean, median, regression &amp; more" FontSize="12" TextColor="Gray"/>
+                        <Button x:Name="StatsBtn" Text="Open →" BackgroundColor="#FF9800" 
+                                TextColor="White" CornerRadius="8" HeightRequest="35"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Unit Converter Card -->
+            <Frame CornerRadius="15" BackgroundColor="#F3E5F5">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="🔄" FontSize="40" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Unit Converter" FontSize="18" FontAttributes="Bold"/>
+                        <Label Text="Length, weight, temperature &amp; more" FontSize="12" TextColor="Gray"/>
+                        <Button x:Name="ConverterBtn" Text="Open →" BackgroundColor="#9C27B0" 
+                                TextColor="White" CornerRadius="8" HeightRequest="35"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+            <!-- Matrix Card -->
+            <Frame CornerRadius="15" BackgroundColor="#FFEBEE">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="🔢" FontSize="40" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Matrix Calculator" FontSize="18" FontAttributes="Bold"/>
+                        <Label Text="Add, multiply, determinant" FontSize="12" TextColor="Gray"/>
+                        <Button x:Name="MatrixBtn" Text="Open →" BackgroundColor="#F44336" 
+                                TextColor="White" CornerRadius="8" HeightRequest="35"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
