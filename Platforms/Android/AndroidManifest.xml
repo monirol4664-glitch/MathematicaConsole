@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          android:versionCode="1"
+          android:versionName="1.0"
+          package="com.mathtools.app">
+
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
+    
+    <application android:label="Math Tools" 
+                 android:icon="@mipmap/ic_launcher"
+                 android:roundIcon="@mipmap/ic_launcher_round"
+                 android:allowBackup="true"
+                 android:theme="@style/Theme.Maui.Splash">
+        
+        <!-- 🔥 THIS IS THE CRITICAL SECTION 🔥 -->
+        <activity android:name="com.mathtools.app.MainActivity"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+    </application>
+</manifest>
