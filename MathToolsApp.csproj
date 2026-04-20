@@ -10,11 +10,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     
-    <!-- 🔥 THIS IS THE KEY FIX - Add all architectures 🔥 -->
-    <RuntimeIdentifiers>android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
-    
-    <!-- Support older Android versions -->
+    <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
     <SupportedOSPlatformVersion>21.0</SupportedOSPlatformVersion>
+    
+    <!-- Auto-generate manifest -->
+    <AndroidEnableLauncherIcon>true</AndroidEnableLauncherIcon>
   </PropertyGroup>
 
   <ItemGroup>
