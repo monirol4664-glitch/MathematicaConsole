@@ -1,0 +1,109 @@
+name: Build Android APK (No Secrets)
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/build-android.yml'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Manual trigger from GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Install MAUI workloads
+      run: |
+        dotnet workload install maui --ignore-failed-sources
+        dotnet workload install android
+    
+    - name: Restore dependencies
+      run: dotnet restore MyAndroidApp.sln
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'microsoft'
+        java-version: '17'
+    
+    - name: Build Debug APK
+      run: |
+        dotnet build src/MyAndroidApp/MyAndroidApp.csproj -c Debug -f net8.0-android --no-restore
+        dotnet publish src/MyAndroidApp/MyAndroidApp.csproj -c Debug -f net8.0-android --no-build -p:AndroidPackageFormat=apk
+    
+    - name: Find and Rename APK
+      run: |
+        # Find the generated APK
+        APK_PATH=$(find src -name "*.apk" -type f | head -n 1)
+        if [ -n "$APK_PATH" ]; then
+          cp "$APK_PATH" "MyAndroidApp-debug.apk"
+          echo "APK found and copied to MyAndroidApp-debug.apk"
+          ls -la *.apk
+        else
+          echo "No APK found!"
+          exit 1
+        fi
+    
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyAndroidApp-debug
+        path: MyAndroidApp-debug.apk
+        retention-days: 30
+        if-no-files-found: error
+    
+    - name: Get APK info
+      run: |
+        echo "✅ APK built successfully!"
+        echo "📱 File: MyAndroidApp-debug.apk"
+        echo "📍 Location: Available in artifacts"
+        echo "🔧 Signing: Debug keystore (no secrets required)"
+        echo "💡 Install: adb install MyAndroidApp-debug.apk"
+
+  # Optional: Create a release with the APK
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Download APK artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: MyAndroidApp-debug
+        path: .
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Build ${{ github.run_number }}
+        body: |
+          ## Android APK Build
+          - **Build Number:** ${{ github.run_number }}
+          - **Date:** ${{ github.event.head_commit.timestamp }}
+          - **Commit:** ${{ github.sha }}
+          - **Signed with:** Debug keystore (for testing only)
+          
+          ### Installation
+          1. Download the APK file below
+          2. Enable "Install from unknown sources" on your Android device
+          3. Install the APK
+        files: MyAndroidApp-debug.apk
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
