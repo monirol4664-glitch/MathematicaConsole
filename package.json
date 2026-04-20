@@ -7,8 +7,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "@capacitor/core": "^5.0.0",
-    "@capacitor/android": "^5.0.0",
     "mathjs": "^11.11.0",
     "chart.js": "^4.4.0",
     "react-chartjs-2": "^5.2.0",
@@ -19,12 +17,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "capacitor-init": "cap init MathApp com.mathapp.app --web-dir=build",
-    "capacitor-add-android": "cap add android",
-    "capacitor-sync": "cap sync android",
-    "capacitor-open": "cap open android",
-    "build-apk": "npm run build && npm run capacitor-sync && cd android && ./gradlew assembleDebug"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -42,11 +35,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^5.0.0",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
-    "react-test-renderer": "^18.2.0"
   }
 }
