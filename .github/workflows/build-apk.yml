@@ -1,0 +1,112 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Install Android workload
+      run: |
+        dotnet workload install android
+        dotnet workload update
+    
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'microsoft'
+        java-version: '17'
+    
+    - name: Restore dependencies
+      run: dotnet restore MyAndroidApp.sln
+    
+    - name: Build Debug APK
+      run: |
+        cd src/MyAndroidApp
+        dotnet build -c Debug -f net8.0-android
+        dotnet publish -c Debug -f net8.0-android -p:AndroidPackageFormat=apk
+    
+    - name: Find generated APK
+      id: find_apk
+      run: |
+        APK_PATH=$(find . -name "*.apk" -type f | grep -v "\\/obj\\/" | head -n 1)
+        if [ -z "$APK_PATH" ]; then
+          echo "No APK found!"
+          exit 1
+        fi
+        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "APK found at: $APK_PATH"
+        
+        # Copy to predictable location
+        cp "$APK_PATH" "MyAndroidApp-debug.apk"
+        ls -la MyAndroidApp-debug.apk
+    
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyAndroidApp-v1.0-${{ github.run_number }}
+        path: MyAndroidApp-debug.apk
+        retention-days: 90
+        compression-level: 0
+    
+    - name: Create Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: build-v1.0.${{ github.run_number }}
+        name: Android APK Build ${{ github.run_number }}
+        body: |
+          ## 📱 Android APK Build Successful!
+          
+          **Build Details:**
+          - Build Number: ${{ github.run_number }}
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref_name }}
+          - Date: ${{ github.event.head_commit.timestamp }}
+          
+          **Features:**
+          - ✅ Click counter with animations
+          - ✅ Haptic feedback on every 5 clicks
+          - ✅ Built with .NET 8 Android
+          - ✅ Debug signed (no secrets required)
+          
+          **Installation:**
+          1. Download the APK below
+          2. Enable "Install from unknown sources" on your Android device
+          3. Open the APK file to install
+          
+          **Compatibility:**
+          - Android 5.0 (API 21) and above
+          - Works on phones, tablets, and Android emulators
+        files: MyAndroidApp-debug.apk
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build Summary
+      run: |
+        echo "## ✅ APK Build Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Download your APK:**" >> $GITHUB_STEP_SUMMARY
+        echo "- From the **Artifacts** section above" >> $GITHUB_STEP_SUMMARY
+        echo "- Or from the **Release** (if this was a main/master branch push)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**File:** MyAndroidApp-debug.apk" >> $GITHUB_STEP_SUMMARY
+        echo "**Size:** $(du -h MyAndroidApp-debug.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
