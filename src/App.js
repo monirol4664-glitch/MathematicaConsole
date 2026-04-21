@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+limport React, { useState } from 'react';
 
 function App() {
   const [equation, setEquation] = useState('2x + 3 = 7');
