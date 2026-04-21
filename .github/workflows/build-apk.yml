@@ -1,23 +1,21 @@
-name: Build Android APK
+name: Build APK
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    - uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '18'
     
     - name: Install dependencies
       run: npm install
@@ -34,28 +32,20 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
     
-    - name: Create Android project structure
+    - name: Create Android project
       run: |
         mkdir -p android/app/src/main/assets
         mkdir -p android/app/src/main/java/com/mathapp
         cp -r build/* android/app/src/main/assets/
     
-    - name: Create AndroidManifest.xml
+    - name: Create Android files
       run: |
         cat > android/app/src/main/AndroidManifest.xml << 'EOF'
         <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            package="com.mathapp.pro">
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mathapp.pro">
             <uses-permission android:name="android.permission.INTERNET" />
-            <application
-                android:allowBackup="true"
-                android:icon="@mipmap/ic_launcher"
-                android:label="MathMaster Pro"
-                android:theme="@style/AppTheme">
-                <activity
-                    android:name=".MainActivity"
-                    android:configChanges="orientation|keyboardHidden|screenSize"
-                    android:exported="true">
+            <application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="MathMaster" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity android:name=".MainActivity" android:configChanges="orientation|screenSize" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
@@ -64,9 +54,7 @@ jobs:
             </application>
         </manifest>
         EOF
-    
-    - name: Create MainActivity.java
-      run: |
+        
         cat > android/app/src/main/java/com/mathapp/MainActivity.java << 'EOF'
         package com.mathapp.pro;
         import android.os.Bundle;
@@ -74,59 +62,22 @@ jobs:
         import android.webkit.WebViewClient;
         import androidx.appcompat.app.AppCompatActivity;
         public class MainActivity extends AppCompatActivity {
-            private WebView webView;
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                setContentView(getResources().getIdentifier("activity_main", "layout", getPackageName()));
-                webView = findViewById(getResources().getIdentifier("webView", "id", getPackageName()));
+                WebView webView = new WebView(this);
                 webView.setWebViewClient(new WebViewClient());
                 webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDomStorageEnabled(true);
                 webView.loadUrl("file:///android_asset/index.html");
-            }
-            @Override
-            public void onBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack();
-                } else {
-                    super.onBackPressed();
-                }
+                setContentView(webView);
             }
         }
         EOF
-    
-    - name: Create layout file
-      run: |
-        mkdir -p android/app/src/main/res/layout
-        cat > android/app/src/main/res/layout/activity_main.xml << 'EOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <WebView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/webView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-        EOF
-    
-    - name: Create build.gradle
-      run: |
+        
         cat > android/build.gradle << 'EOF'
         buildscript {
-            repositories {
-                google()
-                mavenCentral()
-            }
-            dependencies {
-                classpath 'com.android.tools.build:gradle:7.4.2'
-            }
-        }
-        allprojects {
-            repositories {
-                google()
-                mavenCentral()
-            }
-        }
-        task clean(type: Delete) {
-            delete rootProject.buildDir
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
         }
         EOF
         
@@ -141,62 +92,27 @@ jobs:
                 versionCode 1
                 versionName "1.0"
             }
-            buildTypes {
-                release {
-                    minifyEnabled false
-                    proguardFiles getDefaultProguardFile('proguard-android.txt')
-                }
-            }
+            buildTypes { release { minifyEnabled false } }
         }
-        dependencies {
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-            implementation 'androidx.webkit:webkit:1.6.0'
-        }
+        dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }
         EOF
-    
-    - name: Create settings.gradle
-      run: |
-        cat > android/settings.gradle << 'EOF'
-        include ':app'
-        rootProject.name = "MathMaster"
-        EOF
-    
-    - name: Create gradle wrapper
-      run: |
-        cd android
-        gradle wrapper --gradle-version 7.5
-        chmod +x gradlew
-        cd ..
+        
+        echo 'include ":app"' > android/settings.gradle
     
     - name: Build APK
       run: |
         cd android
+        wget https://services.gradle.org/distributions/gradle-7.5-bin.zip
+        unzip -q gradle-7.5-bin.zip
+        GRADLE_HOME=$PWD/gradle-7.5
+        export PATH=$GRADLE_HOME/bin:$PATH
+        gradle wrapper --gradle-version 7.5
+        chmod +x gradlew
         ./gradlew assembleRelease --no-daemon
-        cd ..
-    
-    - name: Sign APK (Debug)
-      run: |
-        cd android
-        # Create debug keystore if not exists
-        if [ ! -f debug.keystore ]; then
-          keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug, O=Android, C=US"
-        fi
-        # Sign the APK
-        jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android app/build/outputs/apk/release/app-release-unsigned.apk androiddebugkey
-        # Align the APK
-        $ANDROID_HOME/build-tools/33.0.0/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/MathMaster.apk
         cd ..
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: MathMaster-APK
+        name: MathMaster-App
         path: android/app/build/outputs/apk/release/*.apk
-        retention-days: 90
-    
-    - name: Create Release
-      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: android/app/build/outputs/apk/release/*.apk
-        generate_release_notes: true
