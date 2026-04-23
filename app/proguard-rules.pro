@@ -1,0 +1,2 @@
+-keep class org.matheclipse.** { *; }
+-dontwarn org.matheclipse.**
