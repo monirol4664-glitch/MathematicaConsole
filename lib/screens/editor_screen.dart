@@ -13,7 +13,6 @@ class EditorScreen extends StatefulWidget {
 
 class _EditorScreenState extends State<EditorScreen> {
   final PythonService _pythonService = PythonService();
-  final Map<String, List<String>> _suggestions = {};
   
   @override
   Widget build(BuildContext context) {
@@ -37,11 +36,7 @@ class _EditorScreenState extends State<EditorScreen> {
         ],
       ),
       body: ReorderableListView(
-        onReorder: (oldIndex, newIndex) {
-          if (newIndex > oldIndex) newIndex--;
-          final cell = notebook.cells.removeAt(oldIndex);
-          notebook.cells.insert(newIndex, cell);
-        },
+        onReorder: (oldIndex, newIndex) => notebook.reorderCells(oldIndex, newIndex),
         children: [
           for (var cell in notebook.cells)
             Container(
@@ -60,12 +55,6 @@ class _EditorScreenState extends State<EditorScreen> {
                     child: CodeEditor(
                       code: cell.code,
                       onChanged: (code) => notebook.updateCode(cell.id, code),
-                      suggestions: _suggestions[cell.id] ?? [],
-                      onSuggestionSelected: (suggestion) {
-                        setState(() {
-                          _suggestions[cell.id] = [];
-                        });
-                      },
                     ),
                   ),
                   if (cell.output.isNotEmpty || cell.isRunning)
@@ -150,9 +139,7 @@ class _EditorScreenState extends State<EditorScreen> {
   
   Future<void> _runCell(NotebookModel notebook, CodeCell cell) async {
     notebook.setRunning(cell.id, true);
-    
     final output = await _pythonService.executeCode(cell.code);
-    
     notebook.updateOutput(cell.id, output);
   }
   
