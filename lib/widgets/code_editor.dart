@@ -121,10 +121,6 @@ class _CodeEditorState extends State<CodeEditor> {
               fontSize: 14,
               height: 1.4,
             ),
-            onChanged: (code) {
-              _controller.text = code;
-              widget.onChanged(code);
-            },
           ),
         ),
         if (_showSuggestions && _suggestions.isNotEmpty)
