@@ -16,24 +16,31 @@ jobs:
       
       - name: Setup Android SDK
         run: |
+          # Remove conflicting SDK paths
+          unset ANDROID_SDK_ROOT
+          unset ANDROID_HOME
+          
           cd /tmp
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-11076708_latest.zip
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+          mkdir -p /opt/android-sdk/cmdline-tools
+          mv cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          
+          # Use consistent SDK path
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+          echo "/opt/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "/opt/android-sdk/platform-tools" >> $GITHUB_PATH
+          
+          # Accept licenses
+          yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/opt/android-sdk "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
       
       - name: Create Android App
         run: |
-          # Create directory structure
           mkdir -p app/src/main/assets/jupyter
           mkdir -p app/src/main/java/com/jupyter/mobile
           mkdir -p app/src/main/res/layout
           
-          # Create MainActivity.java
           cat > app/src/main/java/com/jupyter/mobile/MainActivity.java << 'EOF'
           package com.jupyter.mobile;
           import android.os.Bundle;
@@ -67,7 +74,6 @@ jobs:
           }
           EOF
           
-          # Create layout file
           cat > app/src/main/res/layout/activity_main.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <WebView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -76,7 +82,6 @@ jobs:
               android:layout_height="match_parent" />
           EOF
           
-          # Create manifest
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -104,26 +109,27 @@ jobs:
               <style>
                   * { margin: 0; padding: 0; box-sizing: border-box; }
                   body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; }
-                  #toolbar { background: #2d2d2d; padding: 10px; display: flex; gap: 10px; }
+                  #toolbar { background: #2d2d2d; padding: 10px; display: flex; gap: 10px; position: sticky; top: 0; }
                   button { background: #0e639c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
                   button.danger { background: #a1260d; }
-                  #cells { padding: 20px; }
+                  #cells { padding: 20px; padding-bottom: 50px; }
                   .cell { background: #252526; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
                   .cell-header { background: #2d2d2d; padding: 8px 12px; display: flex; justify-content: space-between; }
                   .cell-content { padding: 12px; }
-                  .code-input { width: 100%; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3e3e3e; font-family: monospace; padding: 10px; border-radius: 4px; }
-                  .output { background: #1e1e1e; margin-top: 10px; padding: 10px; border-radius: 4px; border-left: 3px solid #0e639c; white-space: pre-wrap; }
-                  .status { background: #007acc; color: white; padding: 4px 12px; font-size: 12px; position: fixed; bottom: 0; width: 100%; }
+                  .code-input { width: 100%; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3e3e3e; font-family: monospace; padding: 10px; border-radius: 4px; resize: vertical; }
+                  .output { background: #1e1e1e; margin-top: 10px; padding: 10px; border-radius: 4px; border-left: 3px solid #0e639c; white-space: pre-wrap; font-family: monospace; }
+                  .status { background: #007acc; color: white; padding: 8px 12px; font-size: 12px; position: fixed; bottom: 0; width: 100%; z-index: 100; }
               </style>
           </head>
           <body>
               <div id="toolbar">
-                  <button onclick="addCell()">New Cell</button>
-                  <button onclick="runAll()">Run All</button>
-                  <button onclick="resetNotebook()">Reset</button>
+                  <button onclick="addCell()">+ New Cell</button>
+                  <button onclick="runAll()">▶ Run All</button>
+                  <button onclick="clearOutputs()">Clear Outputs</button>
+                  <button class="danger" onclick="resetNotebook()">Reset</button>
               </div>
               <div id="cells"></div>
-              <div class="status" id="status">Loading Python...</div>
+              <div class="status" id="status">Initializing...</div>
               
               <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
               <script>
@@ -132,15 +138,19 @@ jobs:
                   let nextId = 0;
                   
                   async function init() {
-                      document.getElementById('status').innerText = 'Loading Python...';
+                      document.getElementById('status').innerText = 'Loading Python runtime...';
                       pyodide = await loadPyodide();
-                      document.getElementById('status').innerText = 'Python Ready!';
+                      await pyodide.loadPackage('numpy');
+                      document.getElementById('status').innerText = 'Python Ready! Run your code.';
                       addCell();
                   }
                   
                   function addCell() {
                       const id = nextId++;
-                      cells.push({id: id, code: 'print("Hello from Jupyter!")'});
+                      cells.push({
+                          id: id,
+                          code: '# Write Python code here\nprint("Hello from Jupyter Mobile!")\n\n# Try:\n# 2 + 2\n# import numpy as np\n# np.array([1,2,3])'
+                      });
                       render();
                   }
                   
@@ -150,16 +160,17 @@ jobs:
                       cells.forEach((cell, idx) => {
                           const div = document.createElement('div');
                           div.className = 'cell';
+                          div.id = 'cell-' + cell.id;
                           div.innerHTML = 
                               '<div class="cell-header">' +
-                              '<span>Cell ' + (idx+1) + '</span>' +
+                              '<span><b>Cell ' + (idx+1) + '</b></span>' +
                               '<div>' +
-                              '<button onclick="runCell(' + cell.id + ')">Run</button> ' +
-                              '<button onclick="deleteCell(' + cell.id + ')">Delete</button>' +
+                              '<button onclick="runCell(' + cell.id + ')">▶ Run</button> ' +
+                              '<button onclick="deleteCell(' + cell.id + ')" style="background:#a1260d;">🗑 Delete</button>' +
                               '</div></div>' +
                               '<div class="cell-content">' +
-                              '<textarea class="code-input" id="code-' + cell.id + '" rows="4">' + escapeHtml(cell.code) + '</textarea>' +
-                              '<div class="output" id="output-' + cell.id + '">// Click Run</div>' +
+                              '<textarea class="code-input" id="code-' + cell.id + '" rows="5">' + escapeHtml(cell.code) + '</textarea>' +
+                              '<div class="output" id="output-' + cell.id + '">// Click Run to execute code</div>' +
                               '</div>';
                           container.appendChild(div);
                       });
@@ -167,37 +178,69 @@ jobs:
                   
                   async function runCell(id) {
                       const cell = cells.find(c => c.id === id);
-                      const ta = document.getElementById('code-' + id);
-                      cell.code = ta.value;
-                      const outDiv = document.getElementById('output-' + id);
-                      outDiv.innerText = 'Running...';
+                      const textarea = document.getElementById('code-' + id);
+                      cell.code = textarea.value;
+                      const outputDiv = document.getElementById('output-' + id);
+                      outputDiv.innerHTML = '<span style="color:#888;">⏳ Running...</span>';
                       
                       try {
-                          pyodide.runPython('import sys\nfrom io import StringIO\nsys.stdout = StringIO()');
+                          pyodide.runPython(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+sys.stderr = StringIO()
+                          `);
+                          
                           await pyodide.runPythonAsync(cell.code);
-                          const result = pyodide.runPython('sys.stdout.getvalue()');
-                          outDiv.innerText = result || 'Done';
-                      } catch(e) {
-                          outDiv.innerText = 'Error: ' + e;
+                          const stdout = pyodide.runPython('sys.stdout.getvalue()');
+                          const stderr = pyodide.runPython('sys.stderr.getvalue()');
+                          
+                          if (stdout) {
+                              outputDiv.innerHTML = '<span style="color:#90ee90;">✓ Output:</span><br>' + stdout.replace(/\n/g, '<br>');
+                          } else if (stderr) {
+                              outputDiv.innerHTML = '<span style="color:#ff9999;">⚠️ Error:</span><br>' + stderr;
+                          } else {
+                              outputDiv.innerHTML = '<span style="color:#90ee90;">✓</span> Execution completed (no output)';
+                          }
+                      } catch(err) {
+                          outputDiv.innerHTML = '<span style="color:#ff9999;">❌ Error:</span><br>' + err.toString();
                       }
+                      
+                      document.getElementById('status').innerText = 'Cell ' + (cells.findIndex(c => c.id === id) + 1) + ' executed';
                   }
                   
                   async function runAll() {
+                      document.getElementById('status').innerText = 'Running ' + cells.length + ' cells...';
                       for(const cell of cells) {
                           await runCell(cell.id);
+                          await new Promise(r => setTimeout(r, 100));
                       }
+                      document.getElementById('status').innerText = 'All cells executed!';
                   }
                   
                   function deleteCell(id) {
-                      cells = cells.filter(c => c.id !== id);
-                      render();
+                      const index = cells.findIndex(c => c.id === id);
+                      if (index !== -1) {
+                          cells.splice(index, 1);
+                          render();
+                          document.getElementById('status').innerText = 'Cell deleted';
+                      }
+                  }
+                  
+                  function clearOutputs() {
+                      cells.forEach(cell => {
+                          const output = document.getElementById('output-' + cell.id);
+                          if (output) output.innerHTML = '// Output cleared';
+                      });
+                      document.getElementById('status').innerText = 'Outputs cleared';
                   }
                   
                   function resetNotebook() {
-                      if(confirm('Reset all?')) {
+                      if(confirm('Reset all cells? This cannot be undone.')) {
                           cells = [];
                           nextId = 0;
                           addCell();
+                          document.getElementById('status').innerText = 'Notebook reset';
                       }
                   }
                   
@@ -220,19 +263,29 @@ jobs:
         run: |
           cat > build.gradle << 'EOF'
           buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.4.2'
+              }
           }
           allprojects {
-              repositories { google(); mavenCentral() }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
           }
           EOF
           
           cat > app/build.gradle << 'EOF'
           apply plugin: 'com.android.application'
+          
           android {
               compileSdk 34
               namespace 'com.jupyter.mobile'
+              
               defaultConfig {
                   applicationId "com.jupyter.mobile"
                   minSdk 21
@@ -240,8 +293,14 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-              buildTypes { release { minifyEnabled false } }
+              
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
           }
+          
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
           }
@@ -260,17 +319,20 @@ jobs:
           
           curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v7.5.0/gradle/wrapper/gradle-wrapper.jar
           
-          echo '#!/bin/bash' > gradlew
-          echo 'exec java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain "$@"' >> gradlew
+          cat > gradlew << 'EOF'
+          #!/bin/bash
+          exec java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain "$@"
+          EOF
           chmod +x gradlew
       
       - name: Build APK
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          ./gradlew assembleRelease --no-daemon
+          export ANDROID_HOME=/opt/android-sdk
+          export ANDROID_SDK_ROOT=/opt/android-sdk
+          ./gradlew assembleRelease --no-daemon --stacktrace
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Jupyter-Mobile
+          name: Jupyter-Mobile-App
           path: app/build/outputs/apk/release/*.apk
