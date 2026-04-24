@@ -17,36 +17,14 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install Buildozer dependencies
+    - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y libtinfo5
-    
-    - name: Install Buildozer
-      run: |
         pip install buildozer cython
-    
-    - name: Configure Android SDK licenses
-      run: |
-        # Create directory for licenses
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        
-        # Accept all Android SDK licenses automatically
-        yes | sdkmanager --licenses || true
     
     - name: Build APK
       run: |
-        # Accept license by creating the license file
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
-        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo "d56feabf01fb78af6dfcb131a6481e99c3b31845" >> /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        
-        # Set environment variables
-        export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
-        export ANDROID_SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
-        
-        # Build with auto yes for any prompts
         yes y | buildozer android debug
     
     - name: Upload APK
@@ -54,4 +32,3 @@ jobs:
       with:
         name: jupyter-ide-apk
         path: ./bin/*.apk
-        if-no-files-found: error
