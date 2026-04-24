@@ -1,4 +1,4 @@
-name: Build APK using Docker
+name: Build APK (Alternative)
 
 on:
   push:
@@ -13,18 +13,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Build APK with Docker (Non-root user)
-      run: |
-        docker run --rm \
-          -v $(pwd):/home/user/hostdir \
-          -w /home/user/hostdir \
-          --user 1000:1000 \
-          kivy/buildozer:latest \
-          buildozer android debug
+    - name: Build APK
+      uses: digreatbrian/buildozer-action@v2
+      with:
+        workdir: .
+        buildozer_version: stable
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: jupyter-ide-apk
         path: ./bin/*.apk
-        if-no-files-found: error
