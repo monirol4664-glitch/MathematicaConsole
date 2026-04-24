@@ -13,10 +13,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
     
@@ -27,21 +27,24 @@ jobs:
         pip install --upgrade cython buildozer
     
     - name: Build APK with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
+      uses: ArtemSBulgakov/buildozer-action@v2
       id: buildozer
       with:
         command: buildozer android debug
         buildozer_version: stable
     
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: jupyter-ide-apk
         path: ${{ steps.buildozer.outputs.filename }}
+        if-no-files-found: error
+        compression-level: 6
+        overwrite: true
     
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: ${{ steps.buildozer.outputs.filename }}
         generate_release_notes: true
