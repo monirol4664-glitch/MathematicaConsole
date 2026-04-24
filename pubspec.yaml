@@ -3,13 +3,13 @@ description: Python IDE with Jupyter-style interface
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # UI
+  # UI Components
   cupertino_icons: ^1.0.6
   
   # Code editing with syntax highlighting
@@ -21,9 +21,6 @@ dependencies:
   
   # File handling
   path_provider: ^2.1.1
-  
-  # HTTP for downloads
-  dio: ^5.4.0
 
 dev_dependencies:
   flutter_test:
@@ -32,3 +29,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/
