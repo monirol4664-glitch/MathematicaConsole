@@ -27,14 +27,14 @@ fullscreen = 0
 # (list) Permissions
 android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 
-# (str) Android API level (the minimum API version)
+# (int) Android API level (the minimum API version)
 android.api = 30
 
 # (int) Minimum API required (21 = Android 5.0)
 android.minapi = 21
 
 # (int) Android NDK version to use
-android.ndk = 23b
+android.ndk = 25b                    # Changed from 23b to 25b
 
 # (bool) Accept SDK license
 android.accept_sdk_license = True
@@ -57,43 +57,19 @@ android.logcat_filters = *:S python:D
 # (bool) Copy prebuilt python dependency
 android.copy_libs = 1
 
-# (str) Android arch to build for (choices: armeabi-v7a, arm64-v8a, x86, x86_64)
+# (str) Android arch to build for
 android.arch = arm64-v8a
 
 # (bool) Enable AndroidX support
 android.enable_androidx = True
 
-# (str) presplash file (leave blank to disable)
-# presplash.filename = %(source.dir)s/presplash.png
-
-# (str) Icon file (leave blank to disable)
-# icon.filename = %(source.dir)s/icon.png
-
-# (list) Supported languages
-# lang = en_US, fr_FR
-
-# (str) Application versioning (method 1)
+# (str) Application versioning
 version = 0.1
-
-# (str) Application versioning (method 2 - regex)
-# version.regex = ...
-
-# (str) iOS bundle identifier
-# ios.bundle_id = org.ide.jupyteride
-
-# (str) iOS version
-# ios.version = 0.1
 
 [buildozer]
 
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
+# (int) Log level
 log_level = 2
 
-# (bool) WARN: If set to True, it will stop the build if a Python file is missing required module.
+# (bool) WARN: Stop build if Python file missing module
 warn_on_root = 1
-
-# (str) Path to buildozer-writable virtualenv (optional)
-# buildozer_dir = ...
-
-# (list) Global .spec configuration search paths
-# spec_search_path = .
