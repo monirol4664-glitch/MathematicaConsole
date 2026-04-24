@@ -1,66 +1,56 @@
-name: Build Flutter APK with Embedded Python
+name: Build Jupyter Mobile APK
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
-        distribution: 'zulu'
-        java-version: '17'
+        python-version: ${{ matrix.python-version }}
     
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.19.0'
-        channel: 'stable'
-    
-    - name: Create Flutter project with android folder
+    - name: Install system dependencies
       run: |
-        cp -r lib lib_save
-        cp pubspec.yaml pubspec_save.yaml
-        cd /tmp
-        flutter create --platforms=android --org=com.yourapp myapp
-        cd -
-        cp -r /tmp/myapp/android .
-        rm -rf lib
-        cp -r lib_save lib
-        cp pubspec_save.yaml pubspec.yaml
+        sudo apt-get update
+        sudo apt-get install -y \
+          git \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          android-sdk \
+          libssl-dev \
+          libffi-dev \
+          autoconf \
+          automake \
+          libtool \
+          cmake \
+          make \
+          gcc \
+          g++ \
+          libncurses5-dev \
+          libreadline-dev \
+          libsqlite3-dev \
+          libbz2-dev \
+          liblzma-dev
     
-    - name: Auto-Configure Gradle for Chaquopy
+    - name: Set up Android SDK
       run: |
-        # Add Chaquopy Maven repo to project-level build.gradle
-        sed -i '/mavenCentral()/a \        maven { url "https://chaquo.com/maven" }' android/build.gradle
-        sed -i '/dependencies {/a \        classpath "com.chaquo.python:gradle:14.0.2"' android/build.gradle
-        
-        # Apply Chaquopy plugin in app-level build.gradle
-        sed -i '/apply plugin: .com.android.application./a apply plugin: "com.chaquo.python"' android/app/build.gradle
-        
-        # Add Python configuration with NumPy (or any packages you want)
-        sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }\n        python {\n            buildPython "python3"\n            pip {\n                install "numpy"\n                install "pandas"\n            }\n        }' android/app/build.gradle
-    
-    - name: Set Android Manifest for Chaquopy
-      run: |
-        # Add PyApplication to AndroidManifest.xml
-        sed -i 's/android:label=/android:name="com.chaquo.python.android.PyApplication" android:label=/' android/app/src/main/AndroidManifest.xml
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build APK
-      run: flutter build apk --release
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-ide
-        path: build/app/outputs/flutter-apk/app-release.apk
+        export ANDROID_HOME=$HOME/android-sdk
+        mkdir -p $ANDROID_HOME
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-latest.zip
