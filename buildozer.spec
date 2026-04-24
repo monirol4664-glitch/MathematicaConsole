@@ -27,7 +27,7 @@ fullscreen = 0
 # (list) Permissions
 android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 
-# (int) Android API level (the minimum API version)
+# (str) Android API level (the minimum API version)
 android.api = 30
 
 # (int) Minimum API required (21 = Android 5.0)
@@ -72,6 +72,18 @@ android.enable_androidx = True
 # (list) Supported languages
 # lang = en_US, fr_FR
 
+# (str) Application versioning (method 1)
+version = 0.1
+
+# (str) Application versioning (method 2 - regex)
+# version.regex = ...
+
+# (str) iOS bundle identifier
+# ios.bundle_id = org.ide.jupyteride
+
+# (str) iOS version
+# ios.version = 0.1
+
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
@@ -79,3 +91,9 @@ log_level = 2
 
 # (bool) WARN: If set to True, it will stop the build if a Python file is missing required module.
 warn_on_root = 1
+
+# (str) Path to buildozer-writable virtualenv (optional)
+# buildozer_dir = ...
+
+# (list) Global .spec configuration search paths
+# spec_search_path = .
