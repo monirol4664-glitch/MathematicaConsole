@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Editor</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background: #1e1e1e; }
+        #editor { height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="editor"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function() {
+            const editor = monaco.editor.create(document.getElementById('editor'), {
+                value: `# Python Notebook\nprint("Hello, World!")\n\n# Try typing "def" or "for"`,
+                language: 'python',
+                theme: 'vs-dark',
+                fontSize: 16,
+                automaticLayout: true,
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true
+            });
+            
+            // Python autocomplete
+            monaco.languages.registerCompletionItemProvider('python', {
+                provideCompletionItems: () => ({
+                    suggestions: [
+                        'def', 'class', 'import', 'from', 'return',
+                        'if', 'elif', 'else', 'for', 'while', 'break',
+                        'print', 'len', 'range', 'type', 'str', 'int',
+                        'True', 'False', 'None'
+                    ].map(k => ({ label: k, kind: 14, insertText: k }))
+                })
+            });
+        });
+    </script>
+</body>
+</html>
