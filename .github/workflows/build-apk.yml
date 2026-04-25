@@ -1,4 +1,4 @@
-name: Build Python IDE APK
+name: Build Python IDE APK (Simple)
 on:
   workflow_dispatch:
 
@@ -10,74 +10,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # FIX 1: Use Java 17 for Android SDK compatibility
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
       
-      # FIX 2: Setup Android SDK with correct versions
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-34'
           accept-android-sdk-licenses: true
       
-      # FIX 3: Create proper Android project structure
-      - name: Create Android project
+      - name: Create project
         run: |
-          # Create directories
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/app
           mkdir -p app/src/main/res/values
           
-          # Copy source files
           cp index.html app/src/main/assets/
           cp MainActivity.java app/src/main/java/com/app/
           cp AndroidManifest.xml app/src/main/
           
-          # Create styles.xml
           cat > app/src/main/res/values/styles.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme" parent="android:Theme.Holo">
-              </style>
+              <style name="AppTheme" parent="android:Theme.Holo"></style>
           </resources>
           EOF
-      
-      # FIX 4: Create Gradle files with correct versions
-      - name: Create Gradle files
-        run: |
-          # Root build.gradle
+          
           cat > build.gradle << 'EOF'
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:7.3.1'
-              }
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:7.3.1' }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          task clean(type: Delete) {
-              delete rootProject.buildDir
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
           
-          # App build.gradle
           cat > app/build.gradle << 'EOF'
           apply plugin: 'com.android.application'
-          
           android {
               compileSdk 33
-              
               defaultConfig {
                   applicationId "com.app"
                   minSdk 21
@@ -85,83 +58,28 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-              
-              buildTypes {
-                  debug {
-                      debuggable true
-                  }
-              }
-              
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
           }
           EOF
           
-          # Settings.gradle
           echo 'include ":app"' > settings.gradle
-          
-          # gradle.properties
-          cat > gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx1536m
-          android.useAndroidX=false
-          android.enableJetifier=false
-          EOF
       
-      # FIX 5: Setup Gradle Wrapper correctly
-      - name: Setup Gradle Wrapper
+      - name: Install gradle
         run: |
-          mkdir -p gradle/wrapper
-          
-          # Download gradle-wrapper.jar directly
-          curl -L -o gradle/wrapper/gradle-wrapper.jar \
-            https://github.com/gradle/gradle/raw/v7.5.0/gradle/wrapper/gradle-wrapper.jar
-          
-          # Create gradle-wrapper.properties
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-          
-          # Create gradlew script
-          cat > gradlew << 'EOF'
-          #!/bin/sh
-          APP_NAME="Gradle"
-          APP_BASE_NAME=`basename "$0"`
-          CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-          exec java $JAVA_OPTS -cp "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-          EOF
-          
-          chmod +x gradlew
+          sudo apt-get update
+          sudo apt-get install -y gradle
       
-      # FIX 6: Build APK with proper gradle execution
       - name: Build APK
         run: |
-          # Make gradlew executable
-          chmod +x gradlew
+          gradle clean
+          gradle assembleDebug
           
-          # Clean and build
-          ./gradlew clean
-          ./gradlew assembleDebug --no-daemon
-          
-          # Verify APK was created
           if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
-            APK_SIZE=$(du -h app/build/outputs/apk/debug/app-debug.apk | cut -f1)
-            echo "✅ APK built successfully! Size: $APK_SIZE"
-            ls -la app/build/outputs/apk/debug/
-          else
-            echo "❌ APK build failed"
-            exit 1
+            echo "✅ APK built!"
+            ls -lh app/build/outputs/apk/debug/
           fi
       
-      # FIX 7: Upload the APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Python-IDE
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          path: app/build/outputs/apk/debug/*.apk
