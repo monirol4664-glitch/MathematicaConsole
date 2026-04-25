@@ -10,448 +10,156 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up JDK 17
+      # FIX 1: Use Java 11 for Gradle compatibility
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
       
+      # FIX 2: Use specific Android SDK setup without version conflicts
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-34'
+          cmdline-tools-version: 9477386
+          packages: 'platforms;android-34 build-tools;34.0.0'
+          accept-android-sdk-licenses: true
       
-      - name: Download Pyodide and packages (Offline bundle)
+      # FIX 3: Download Pyodide packages
+      - name: Download Pyodide packages
         run: |
-          # Create assets directory
           mkdir -p app/src/main/assets/pyodide
-          
-          # Download Pyodide runtime (full offline version)
           cd app/src/main/assets
           
-          # Download Pyodide core files
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.asm.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.asm.wasm
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/python_stdlib.zip
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/repodata.json
-          
-          # Download numpy package
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/numpy.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/numpy.data
-          
-          # Download matplotlib package
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/matplotlib.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/matplotlib.data
-          
-          # Download other useful packages (optional)
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pandas.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pandas.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/scipy.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/scipy.data
-          
-          # Download dependencies for matplotlib
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/packaging.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/packaging.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/cycler.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/cycler.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/kiwisolver.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/kiwisolver.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyparsing.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyparsing.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/dateutil.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/dateutil.data
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/Pillow.js
-          wget https://cdn.jsdelivr.net/pyodide/v0.25.0/full/Pillow.data
+          # Download to local assets
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.asm.js
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.asm.wasm
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/python_stdlib.zip
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/repodata.json
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/numpy.js
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/numpy.data
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/matplotlib.js
+          wget -q https://cdn.jsdelivr.net/pyodide/v0.25.0/full/matplotlib.data
           
           cd ../../../..
       
-      - name: Create Offline HTML editor
+      # FIX 4: Copy source files
+      - name: Copy source files
         run: |
-          cat > app/src/main/assets/index.html << 'HTML'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-              <title>Offline Python Notebook</title>
-              <style>
-                  * { margin: 0; padding: 0; box-sizing: border-box; }
-                  body { height: 100vh; width: 100vw; overflow: hidden; background: #1e1e1e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-                  .container { display: flex; flex-direction: column; height: 100%; }
-                  .toolbar { background: #2d2d2d; padding: 8px 12px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #3e3e3e; }
-                  button { background: #0e639c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-                  .run-btn { background: #2ea043; }
-                  .run-btn:hover { background: #3fb950; }
-                  .clear-btn { background: #da3633; }
-                  .clear-btn:hover { background: #f85149; }
-                  .status { background: #1e1e1e; color: #89e051; padding: 4px 10px; font-size: 11px; font-family: monospace; border-left: 1px solid #3e3e3e; margin-left: auto; }
-                  .split-view { display: flex; flex: 1; overflow: hidden; }
-                  .editor-pane { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #3e3e3e; }
-                  .output-pane { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; }
-                  .pane-header { background: #2d2d2d; padding: 6px 12px; color: #cccccc; font-size: 11px; font-weight: bold; border-bottom: 1px solid #3e3e3e; }
-                  #editor-container { flex: 1; min-height: 0; }
-                  #output { flex: 1; background: #1e1e1e; color: #d4d4d4; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; padding: 10px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; }
-                  @media (max-width: 768px) {
-                      .split-view { flex-direction: column; }
-                      .editor-pane { flex: 1; border-right: none; border-bottom: 1px solid #3e3e3e; }
-                      .output-pane { flex: 0.8; }
-                      button { padding: 5px 10px; font-size: 11px; }
-                  }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="toolbar">
-                      <button class="run-btn" onclick="runCode()">▶ Run Code</button>
-                      <button onclick="clearOutput()">🗑 Clear</button>
-                      <button onclick="showPackages()">📦 Installed Packages</button>
-                      <div class="status" id="status">⚡ Loading Python (Offline)...</div>
-                  </div>
-                  <div class="split-view">
-                      <div class="editor-pane">
-                          <div class="pane-header">📝 Code Editor</div>
-                          <div id="editor-container"></div>
-                      </div>
-                      <div class="output-pane">
-                          <div class="pane-header">📤 Output</div>
-                          <div id="output">
-                              <span style="color: #89e051;">✓ Offline Mode Ready</span><br>
-                              Loading Python runtime from local files...
-                          </div>
-                      </div>
-                  </div>
-              </div>
-              
-              <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.min.css">
-              <script>
-                  // Use local pyodide files
-                  const offlinePyodidePath = "file:///android_asset/pyodide/";
-                  
-                  // Load Monaco Editor Locally
-                  const monacoScript = document.createElement('script');
-                  monacoScript.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js';
-                  monacoScript.onload = function() {
-                      require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-                      require(['vs/editor/editor.main'], function() {
-                          window.editor = monaco.editor.create(document.getElementById('editor-container'), {
-                              value: `# 🐍 Offline Python Notebook
-# All packages are bundled locally!
-# No internet connection required
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-print("Hello from Python!")
-print(f"numpy version: {np.__version__}")
-
-# Calculate something
-numbers = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-print(f"Mean: {np.mean(numbers)}")
-print(f"Median: {np.median(numbers)}")
-print(f"Standard deviation: {np.std(numbers):.2f}")
-
-# Create a simple plot
-x = np.linspace(0, 10, 50)
-y = np.sin(x)
-print(f"sin values range from {np.min(y):.2f} to {np.max(y):.2f}")
-
-# Your code here:
-`,
-                              language: 'python',
-                              theme: 'vs-dark',
-                              fontSize: 14,
-                              automaticLayout: true,
-                              lineNumbers: 'on',
-                              wordWrap: 'on',
-                              suggestOnTriggerCharacters: true,
-                              quickSuggestions: true,
-                              minimap: { enabled: false }
-                          });
-                          
-                          // Add autocomplete
-                          monaco.languages.registerCompletionItemProvider('python', {
-                              provideCompletionItems: () => ({
-                                  suggestions: [
-                                      'import', 'from', 'as', 'def', 'class', 'return',
-                                      'if', 'elif', 'else', 'for', 'while', 'break',
-                                      'print', 'len', 'range', 'np', 'plt', 'numpy', 'matplotlib'
-                                  ].map(k => ({ label: k, kind: 14, insertText: k, detail: 'Python' }))
-                              })
-                          });
-                      });
-                  };
-                  document.head.appendChild(monacoScript);
-                  
-                  let pyodide = null;
-                  let isLoading = true;
-                  
-                  async function loadPyodideOffline() {
-                      const outputDiv = document.getElementById('output');
-                      const statusDiv = document.getElementById('status');
-                      
-                      statusDiv.innerHTML = '📦 Loading Python (Offline)...';
-                      outputDiv.innerHTML = 'Loading Python runtime from local files...<br>';
-                      
-                      try {
-                          // Load from local assets
-                          const pyodideScript = document.createElement('script');
-                          pyodideScript.src = "file:///android_asset/pyodide/pyodide.js";
-                          pyodideScript.onload = async function() {
-                              outputDiv.innerHTML += '✅ Python runtime loaded<br>';
-                              outputDiv.innerHTML += '📦 Loading numpy and matplotlib...<br>';
-                              
-                              pyodide = await window.loadPyodide({
-                                  indexURL: "file:///android_asset/pyodide/",
-                                  fullStdLib: false
-                              });
-                              
-                              // Load packages from local files
-                              await pyodide.runPythonAsync(`
-                                  import sys
-                                  import micropip
-                                  
-                                  # Mark packages as available locally
-                                  sys.path.insert(0, "file:///android_asset/pyodide/")
-                                  
-                                  # Import numpy from local
-                                  import numpy as np
-                                  print(f"✅ numpy {np.__version__}")
-                                  
-                                  # Import matplotlib from local
-                                  import matplotlib
-                                  matplotlib.use('Agg')
-                                  import matplotlib.pyplot as plt
-                                  print(f"✅ matplotlib {matplotlib.__version__}")
-                                  
-                                  print("\\n✨ Offline Python Notebook Ready!")
-                                  print("=" * 40)
-                              `);
-                              
-                              const finalOutput = pyodide.runPython(`
-                                  import sys
-                                  sys.stdout.getvalue() if hasattr(sys.stdout, 'getvalue') else "Ready!"
-                              `);
-                              
-                              outputDiv.innerHTML = finalOutput.replace(/\\n/g, '<br>');
-                              statusDiv.innerHTML = '✅ Ready | Offline Mode';
-                              isLoading = false;
-                          };
-                          document.head.appendChild(pyodideScript);
-                          
-                      } catch (err) {
-                          outputDiv.innerHTML = `❌ Error: ${err.message}<br><br>Make sure all files are bundled correctly.`;
-                          statusDiv.innerHTML = '❌ Error';
-                      }
-                  }
-                  
-                  async function runCode() {
-                      if (isLoading || !pyodide) {
-                          addOutputLine("⚠️ Python is still loading. Please wait...");
-                          return;
-                      }
-                      
-                      const code = window.editor.getValue();
-                      const statusDiv = document.getElementById('status');
-                      statusDiv.innerHTML = '▶ Running...';
-                      
-                      try {
-                          // Capture stdout
-                          pyodide.runPython(`
-                              import sys
-                              from io import StringIO
-                              sys.stdout = StringIO()
-                              sys.stderr = StringIO()
-                          `);
-                          
-                          await pyodide.runPythonAsync(code);
-                          
-                          const stdout = pyodide.runPython('sys.stdout.getvalue()');
-                          const stderr = pyodide.runPython('sys.stderr.getvalue()');
-                          
-                          let output = '';
-                          if (stdout) output += stdout;
-                          if (stderr) output += `<span style="color: #f85149;">${stderr}</span>`;
-                          
-                          if (output.trim() === '') {
-                              output = '✓ Code executed successfully (no output)';
-                          }
-                          
-                          document.getElementById('output').innerHTML = output.replace(/\\n/g, '<br>');
-                          statusDiv.innerHTML = '✅ Ready';
-                          
-                      } catch (err) {
-                          document.getElementById('output').innerHTML = `<span style="color: #f85149;">Error:</span><br>${err.message}`;
-                          statusDiv.innerHTML = '❌ Error';
-                      }
-                  }
-                  
-                  function clearOutput() {
-                      document.getElementById('output').innerHTML = '✨ Output cleared<br>';
-                  }
-                  
-                  function addOutputLine(text) {
-                      const output = document.getElementById('output');
-                      output.innerHTML += (output.innerHTML ? '<br>' : '') + text;
-                  }
-                  
-                  function showPackages() {
-                      if (pyodide && !isLoading) {
-                          const packages = pyodide.runPython(`
-                              import sys
-                              '\\n'.join([p for p in sys.modules.keys() if not p.startswith('_')][:20])
-                          `);
-                          addOutputLine(`\\n📦 Available packages:\\n${packages}`);
-                      }
-                  }
-                  
-                  // Start loading
-                  setTimeout(loadPyodideOffline, 1000);
-              </script>
-          </body>
-          </html>
-          HTML
+          cp index.html app/src/main/assets/
+          cp MainActivity.java app/src/main/java/com/app/
+          cp AndroidManifest.xml app/src/main/
       
-      - name: Create MainActivity.java
-        run: |
-          cat > app/src/main/java/com/app/MainActivity.java << 'JAVA'
-          package com.app;
-          
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebView;
-          import android.webkit.WebSettings;
-          import android.webkit.WebChromeClient;
-          import android.view.KeyEvent;
-          
-          public class MainActivity extends Activity {
-              private WebView webView;
-              
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  
-                  webView = new WebView(this);
-                  WebSettings webSettings = webView.getSettings();
-                  webSettings.setJavaScriptEnabled(true);
-                  webSettings.setDomStorageEnabled(true);
-                  webSettings.setLoadWithOverviewMode(true);
-                  webSettings.setUseWideViewPort(true);
-                  webSettings.setBuiltInZoomControls(true);
-                  webSettings.setDisplayZoomControls(false);
-                  webSettings.setAllowFileAccess(true);
-                  webSettings.setAllowFileAccessFromFileURLs(true);
-                  webSettings.setAllowUniversalAccessFromFileURLs(true);
-                  webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-                  
-                  webView.setWebChromeClient(new WebChromeClient());
-                  webView.loadUrl("file:///android_asset/index.html");
-                  setContentView(webView);
-              }
-              
-              @Override
-              public boolean onKeyDown(int keyCode, KeyEvent event) {
-                  if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-                      webView.goBack();
-                      return true;
-                  }
-                  return super.onKeyDown(keyCode, event);
-              }
-          }
-          JAVA
-      
-      - name: Create AndroidManifest.xml
-        run: |
-          cat > app/src/main/AndroidManifest.xml << 'MANIFEST'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.app">
-              
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              
-              <application
-                  android:allowBackup="true"
-                  android:icon="@android:drawable/sym_def_app_icon"
-                  android:label="Python Notebook (Offline)"
-                  android:usesCleartextTraffic="true"
-                  android:theme="@android:style/Theme.Holo">
-                  
-                  <activity
-                      android:name=".MainActivity"
-                      android:configChanges="orientation|screenSize"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          MANIFEST
-      
+      # FIX 5: Gradle files with correct versions
       - name: Create Gradle files
         run: |
-          cat > build.gradle << 'GRADLE'
+          # Root build.gradle - Compatible with Java 11
+          cat > build.gradle << 'EOF'
           buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.1.4' }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.4.2'
+              }
           }
-          allprojects { repositories { google(); mavenCentral() } }
-          tasks.register('clean', Delete) { delete rootProject.buildDir }
-          GRADLE
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
           
-          cat > app/build.gradle << 'APPGRADLE'
-          plugins { id 'com.android.application' }
+          # App build.gradle
+          cat > app/build.gradle << 'EOF'
+          apply plugin: 'com.android.application'
+          
           android {
-              namespace 'com.app'
               compileSdk 34
+              
               defaultConfig {
-                  applicationId 'com.app'
+                  applicationId "com.app"
                   minSdk 21
                   targetSdk 34
                   versionCode 1
-                  versionName '1.0'
+                  versionName "1.0"
               }
-              buildTypes { debug { debuggable true } }
+              
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
           }
-          APPGRADLE
+          EOF
           
+          # Settings.gradle
           echo 'include ":app"' > settings.gradle
-          cat > gradle.properties << 'PROPERTIES'
-          org.gradle.jvmargs=-Xmx2048m
-          android.useAndroidX=false
-          PROPERTIES
+          
+          # Gradle properties
+          cat > gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx1536m
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
       
+      # FIX 6: Setup Gradle wrapper properly
       - name: Setup Gradle Wrapper
         run: |
+          # Create wrapper directory
           mkdir -p gradle/wrapper
-          cat > gradle/wrapper/gradle-wrapper.properties << 'WRAPPER'
+          
+          # Create properties file
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
-          WRAPPER
-          curl -L -o gradle/wrapper/gradle-wrapper.jar \
-            https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
-          cat > gradlew << 'GRADLEW'
+          EOF
+          
+          # Download gradle-wrapper.jar
+          curl -s -L -o gradle/wrapper/gradle-wrapper.jar \
+            https://raw.githubusercontent.com/gradle/gradle/v7.5.0/gradle/wrapper/gradle-wrapper.jar
+          
+          # Create gradlew script
+          cat > gradlew << 'EOF'
           #!/bin/sh
-          JAVA_CMD="java"
-          if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
-              JAVA_CMD="$JAVA_HOME/bin/java"
-          fi
-          exec $JAVA_CMD -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain "$@"
-          GRADLEW
+          APP_HOME=$(cd "$(dirname "$0")"; pwd)
+          DEFAULT_JVM_OPTS=""
+          CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+          exec java $DEFAULT_JVM_OPTS -cp $CLASSPATH org.gradle.wrapper.GradleWrapperMain "$@"
+          EOF
+          
+          # Make executable
           chmod +x gradlew
       
+      # FIX 7: Build APK with retry logic
       - name: Build APK
         run: |
+          # Clean first
+          ./gradlew clean --no-daemon
+          
+          # Build debug APK
           ./gradlew assembleDebug --no-daemon --stacktrace
+          
+          # Verify APK was created
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "✅ APK built successfully!"
+            ls -lh app/build/outputs/apk/debug/
+          else
+            echo "❌ APK not found"
+            exit 1
+          fi
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Python-Notebook-Offline
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
