@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Python Notebook - Execute Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .toolbar {
+            background: #2d2d2d;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #3e3e3e;
+        }
+        
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #1177bb;
+        }
+        
+        button:active {
+            background: #0e5a8a;
+        }
+        
+        .run-btn {
+            background: #2ea043;
+        }
+        
+        .run-btn:hover {
+            background: #3fb950;
+        }
+        
+        .clear-btn {
+            background: #da3633;
+        }
+        
+        .clear-btn:hover {
+            background: #f85149;
+        }
+        
+        .status {
+            background: #1e1e1e;
+            color: #89e051;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-family: monospace;
+            border-left: 1px solid #3e3e3e;
+            margin-left: auto;
+        }
+        
+        .split-view {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e3e;
+        }
+        
+        .output-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+        }
+        
+        .pane-header {
+            background: #2d2d2d;
+            padding: 8px 12px;
+            color: #cccccc;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #3e3e3e;
+        }
+        
+        #editor-container {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        #output {
+            flex: 1;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            padding: 15px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .split-view {
+                flex-direction: column;
+            }
+            .editor-pane {
+                flex: 1;
+                border-right: none;
+                border-bottom: 1px solid #3e3e3e;
+            }
+            .output-pane {
+                flex: 0.8;
+            }
+            button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <button class="run-btn" onclick="runCode()">▶ Run Code</button>
+            <button onclick="clearOutput()">🗑 Clear Output</button>
+            <button onclick="installPackage()">📦 Install Package</button>
+            <div class="status" id="status">⚡ Loading Python...</div>
+        </div>
+        
+        <div class="split-view">
+            <div class="editor-pane">
+                <div class="pane-header">📝 Code Editor</div>
+                <div id="editor-container"></div>
+            </div>
+            <div class="output-pane">
+                <div class="pane-header">📤 Output</div>
+                <div id="output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">🐍 Loading Python Runtime...<br>First load may take a few seconds</div>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script>
+        let pyodide = null;
+        let editor = null;
+        let isLoading = true;
+        
+        // Initialize Monaco Editor
+        require.config({ 
+            paths: { 
+                vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+            } 
+        });
+        
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: `# 🐍 Python Notebook - Executable Code!
+# ======================================
+# This code actually runs! Type anything below
+# and click "Run Code" to execute it.
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Create a simple plot
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+print("Hello from Python!")
+print(f"numpy version: {np.__version__}")
+print(f"sin(0) = {np.sin(0)}")
+print(f"sin(pi/2) = {np.sin(np.pi/2)}")
+
+# Create a basic plot (will show as text stats)
+plt.figure(figsize=(6, 4))
+plt.plot(x, y, label='sin(x)')
+plt.xlabel('x')
+plt.ylabel('sin(x)')
+plt.title('Sine Wave')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Try data analysis
+data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+mean = np.mean(data)
+std = np.std(data)
+print(f"\\nData: {data}")
+print(f"Mean: {mean}")
+print(f"Standard Deviation: {std:.2f}")
+
+# Your code here:
+`,
+                language: 'python',
+                theme: 'vs-dark',
+                fontSize: 14,
+                automaticLayout: true,
+                lineNumbers: 'on',
+                wordWrap: 'on',
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true,
+                minimap: { enabled: false }
+            });
+            
+            // Python autocomplete
+            monaco.languages.registerCompletionItemProvider('python', {
+                provideCompletionItems: () => {
+                    const keywords = [
+                        'import', 'from', 'as', 'def', 'class', 'return',
+                        'if', 'elif', 'else', 'for', 'while', 'break',
+                        'continue', 'try', 'except', 'finally', 'with',
+                        'print', 'len', 'range', 'type', 'str', 'int',
+                        'float', 'list', 'dict', 'set', 'tuple', 'bool',
+                        'numpy', 'np', 'matplotlib', 'plt', 'pandas', 'pd'
+                    ];
+                    return {
+                        suggestions: keywords.map(k => ({
+                            label: k,
+                            kind: monaco.languages.CompletionItemKind.Keyword,
+                            insertText: k,
+                            detail: 'Python'
+                        }))
+                    };
+                }
+            });
+        });
+        
+        // Initialize Pyodide
+        async function loadPyodide() {
+            const loadingDiv = document.getElementById('loading');
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                statusDiv.innerHTML = '📦 Loading Python packages...';
+                
+                // Load Pyodide
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+                });
+                
+                statusDiv.innerHTML = '📥 Installing numpy and matplotlib...';
+                
+                // Install numpy and matplotlib
+                await pyodide.loadPackage(['numpy', 'matplotlib']);
+                
+                // Setup matplotlib to work without GUI
+                pyodide.runPython(`
+                    import matplotlib
+                    matplotlib.use('Agg')
+                    import matplotlib.pyplot as plt
+                    import numpy as np
+                    
+                    # Redirect print to capture output
+                    import sys
+                    from io import StringIO
+                    
+                    print("✅ Packages loaded successfully!")
+                    print(f"numpy version: {np.__version__}")
+                    print(f"matplotlib version: {matplotlib.__version__}")
+                `);
+                
+                // Capture stdout
+                const output = pyodide.runPython(`
+                    sys.stdout.getvalue() if hasattr(sys.stdout, 'getvalue') else "Ready!"
+                `);
+                
+                document.getElementById('output').innerHTML = output;
+                statusDiv.innerHTML = '✅ Ready | numpy + matplotlib installed';
+                isLoading = false;
+                loadingDiv.style.display = 'none';
+                
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerHTML = '❌ Failed to load Python';
+                loadingDiv.innerHTML = `Error loading Python: ${err.message}<br>Check internet connection and try again.`;
+            }
+        }
+        
+        // Run Python code
+        async function runCode() {
+            if (isLoading || !pyodide) {
+                addOutputLine("⚠️ Python is still loading. Please wait...");
+                return;
+            }
+            
+            const code = editor.getValue();
+            const outputDiv = document.getElementById('output');
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '▶ Running...';
+            
+            try {
+                // Clear previous output for this run
+                // Set up output capture
+                pyodide.runPython(`
+                    import sys
+                    from io import StringIO
+                    sys.stdout = StringIO()
+                    sys.stderr = StringIO()
+                `);
+                
+                // Run the user's code
+                const result = pyodide.runPython(code);
+                
+                // Get captured output
+                const stdout = pyodide.runPython('sys.stdout.getvalue()');
+                const stderr = pyodide.runPython('sys.stderr.getvalue()');
+                
+                let output = '';
+                if (stdout) output += stdout;
+                if (stderr) output += stderr;
+                if (result !== undefined && result !== null && stdout === '') {
+                    output += str(result);
+                }
+                
+                if (output.trim() === '') {
+                    output = '✓ Code executed successfully (no output)';
+                }
+                
+                outputDiv.innerHTML = output.replace(/\\n/g, '<br>').replace(/ /g, ' ');
+                statusDiv.innerHTML = '✅ Ready';
+                
+            } catch (err) {
+                outputDiv.innerHTML = `<span style="color: #f85149;">Error:</span><br>${err.message}`;
+                statusDiv.innerHTML = '❌ Error';
+            }
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+            addOutputLine("✨ Output cleared");
+        }
+        
+        function addOutputLine(text) {
+            const output = document.getElementById('output');
+            output.innerHTML += (output.innerHTML ? '<br>' : '') + text;
+        }
+        
+        async function installPackage() {
+            const packageName = prompt('Enter package name to install (e.g., pandas, scipy):');
+            if (!packageName) return;
+            
+            const statusDiv = document.getElementById('status');
+            const outputDiv = document.getElementById('output');
+            
+            statusDiv.innerHTML = `📦 Installing ${packageName}...`;
+            addOutputLine(`\n📦 Installing ${packageName}...`);
+            
+            try {
+                await pyodide.loadPackage(packageName);
+                addOutputLine(`✅ Successfully installed ${packageName}`);
+                statusDiv.innerHTML = '✅ Ready';
+            } catch (err) {
+                addOutputLine(`❌ Failed to install ${packageName}: ${err.message}`);
+                statusDiv.innerHTML = '❌ Installation failed';
+            }
+        }
+        
+        // Helper function for string conversion
+        function str(obj) {
+            if (obj === undefined) return '';
+            if (obj === null) return 'None';
+            return String(obj);
+        }
+        
+        // Start loading Python
+        loadPyodide();
+    </script>
+</body>
+</html>
